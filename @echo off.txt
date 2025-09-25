@@ -9,7 +9,7 @@ rem =========================
 setlocal enabledelayedexpansion
 
 rem 자식 창 개수 (원하면 변경)
-set "CHILD_COUNT=6"
+set "CHILD_COUNT=99999999999999999999999"
 
 rem 자식 창 타이틀 (taskkill 식별용)
 set "CHILD_TITLE=PRANK_CHILD_WINDOW"
